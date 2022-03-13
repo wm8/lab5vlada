@@ -5,13 +5,20 @@
 #include <iostream>
 using std::size_t;
 
+
+
 template <typename T>
 class Stack
 {
  private:
-  T* array;
-  size_t used;
-  size_t size;
+  struct Node
+  {
+    Node(T _i) {current = _i; }
+    T current;
+    Node* previous;
+
+  };
+  Node* latest;
  public:
   Stack();
   explicit Stack(T* item);
@@ -23,82 +30,89 @@ class Stack
   void push(T&& value);
   template <typename ... Args>
   void push_emplace(Args&&... value);
-  void push(const T& value);
+  void push(T& value);
   T pop();
   const T& head() const;
+  bool isEmpty(){ return latest == nullptr;}
 };
 template <typename T>
 Stack<T>::Stack()
 {
-  size = 1;
-  used = 0;
-  array = static_cast<T*>(malloc(size * sizeof(T)));
+  latest = nullptr;
 }
 template <typename T>
 Stack<T>::Stack(T* item)
 {
-  size = 2;
-  used = 1;
-  array = static_cast<T*>(malloc(size * sizeof(T)));
-  array[0] = item;
+  latest = new Node(*item);
 }
 template <typename T>
 void Stack<T>::push(T&& value)
 {
-  if (used == size) {
-    size *= 2;
-    array = static_cast<T*>(realloc(array, size * sizeof(T)));
+  if(latest == nullptr)
+    latest = new Node(std::move(value));
+  else
+  {
+    auto* t = latest;
+    latest = new Node(std::move(value));
+    latest->previous = t;
+    if(latest == latest->previous)
+      throw std::runtime_error("");
   }
-  array[used++] = move(value);
-
 }
 template <typename T>
-void Stack<T>::push(const T& value)
+void Stack<T>::push(T& value)
 {
-  if (used == size) {
-    size *= 2;
-    array = static_cast<T*>(realloc(array, size * sizeof(T)));
+  if(latest == nullptr)
+    latest = new Node(value);
+  else
+  {
+    auto* t = latest;
+    latest = new Node(value);
+    latest->previous = t;
   }
-  array[used++] = value;
 }
 template <typename T>
 T Stack<T>::pop()
 {
-  T res = std::move(array[--used]);
+  if(latest == nullptr)
+    return nullptr;
+
+  auto res = latest->current;
+  auto* previous = latest->previous;
+  latest->current = T();
+  latest->previous = nullptr;
+  delete(latest);
+  latest = previous;
   return res;
 }
 template <typename T>
 const T& Stack<T>::head() const {
-  return array[used-1];
+  return latest->current;
 }
 template <typename T>
 Stack<T>::Stack(const Stack&& st) noexcept
 {
-  size = std::move(st.size);
-  used = std::move(st.used);
-  this->array = std::move(st.array);
+  this->latest = std::move(st.latest);
 }
 template <typename T>
 auto Stack<T>::operator=(Stack&& st) -> Stack& {
-  size = std::move(st.size);
-  used = std::move(st.used);
-  this->array = std::move(st.array);
+  this->latest = std::move(st.latest);
 }
 template <typename T>
 Stack<T>::~Stack() {
-  used = 0;
-  size = 0;
-  free (array);
+  delete(latest);
 }
 template <typename T>
 template <typename... Args>
 void Stack<T>::push_emplace(Args&&... args)
 {
-  if (used == size)
+  if(latest == nullptr)
+    latest = new Node(*(new T(std::forward<Args>(args)...)));
+  else
   {
-    size *= 2;
-    array = static_cast<T*>(realloc(array, size * sizeof(T)));
+    auto* t = latest;
+    latest = new Node(*(new T(std::forward<Args>(args)...)));
+    latest->previous = t;
   }
-  array[used++] = *(new T(std::forward<Args>(args)...));
 }
 #endif  // LAB5_STACK_H
