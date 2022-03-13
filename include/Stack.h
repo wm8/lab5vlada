@@ -13,7 +13,12 @@ class Stack
  private:
   struct Node
   {
-    Node(T _i) {current = _i; }
+    Node(T _i) {current = _i; previous = nullptr; }
+    ~Node()
+    {
+      if (previous != nullptr)
+        delete(previous);
+    }
     T current;
     Node* previous;
 
@@ -48,21 +53,19 @@ Stack<T>::Stack(T* item)
 template <typename T>
 void Stack<T>::push(T&& value)
 {
-  if(latest == nullptr)
+  if (latest == nullptr)
     latest = new Node(std::move(value));
   else
   {
     auto* t = latest;
     latest = new Node(std::move(value));
     latest->previous = t;
-    if(latest == latest->previous)
-      throw std::runtime_error("");
   }
 }
 template <typename T>
 void Stack<T>::push(T& value)
 {
-  if(latest == nullptr)
+  if (latest == nullptr)
     latest = new Node(value);
   else
   {
@@ -74,9 +77,8 @@ void Stack<T>::push(T& value)
 template <typename T>
 T Stack<T>::pop()
 {
-  if(latest == nullptr)
+  if (latest == nullptr)
     return nullptr;
-
   auto res = latest->current;
   auto* previous = latest->previous;
   latest->current = T();
